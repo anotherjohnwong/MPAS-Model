@@ -954,6 +954,15 @@
 
  xtime_m = xtime_s/60.
 
+ if (itimestep == 1 .and. dt_radtsw == dt .and. &
+     (mpas_cpl%role_is(ROLE_INTEGRATE) .or. mpas_cpl%role_is(ROLE_RADIATION))) then
+     ! When running lagged radiation with dt == radt, the 2nd and 3rd timesteps would receive
+     ! SW radiation computed at 1 radt behind.
+     call mpas_log_write('')
+     call mpas_log_write('WARNING: Lagged radiation with dt==radt is not fully supported.')
+     call mpas_log_write('')
+ end if
+
  if (mpas_cpl%role_includes(ROLE_RADIATION)) then
 ! This should be OMP MASTER with barrier afterwards or OMP SINGLE, since declin and solcon
 ! are global variables in mpas_atmphys_vars.F and race conditions may occur otherwise!
