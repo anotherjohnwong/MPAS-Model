@@ -943,6 +943,7 @@
 
 !local variables:
  integer:: o3input
+ logical:: is_lagged
  real(kind=RKIND):: radt,xtime_m
 
 !-----------------------------------------------------------------------------------------------------------------
@@ -954,8 +955,9 @@
 
  xtime_m = xtime_s/60.
 
- if (itimestep == 1 .and. dt_radtsw == dt .and. &
-     (mpas_cpl%role_is(ROLE_INTEGRATE) .or. mpas_cpl%role_is(ROLE_RADIATION))) then
+ is_lagged = (mpas_cpl%role_is(ROLE_INTEGRATE) .or. mpas_cpl%role_is(ROLE_RADIATION))
+
+ if (itimestep == 1 .and. dt_radtsw == dt .and. is_lagged) then
      ! When running lagged radiation with dt == radt, the 2nd and 3rd timesteps would receive
      ! SW radiation computed at 1 radt behind.
      call mpas_log_write('')
@@ -972,10 +974,12 @@
  radt = dt_radtsw/60.
 
 !... Adjust effective solar time for lagged radiation
- if (itimestep == 2) then
-    xtime_m = xtime_m - dt/60. + radt ! Special radiation step after init
- elseif (itimestep > 2) then
-    xtime_m = xtime_m + radt
+ if (is_lagged) then
+    if (itimestep == 2) then
+       xtime_m = xtime_m - dt/60. + radt ! Special radiation step after init
+    elseif (itimestep > 2) then
+       xtime_m = xtime_m + radt
+    end if
  end if
 
 !... calculates solar declination:
