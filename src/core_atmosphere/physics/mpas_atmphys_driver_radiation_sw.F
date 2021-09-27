@@ -961,7 +961,7 @@
      ! When running lagged radiation with dt == radt, the 2nd and 3rd timesteps would receive
      ! SW radiation computed at 1 radt behind.
      call mpas_log_write('')
-     call mpas_log_write('WARNING: Lagged radiation with dt==radt is not fully supported.')
+     call mpas_log_write('Lagged radiation with dt==radt is not fully supported.', messageType=MPAS_LOG_WARN)
      call mpas_log_write('')
  end if
 
