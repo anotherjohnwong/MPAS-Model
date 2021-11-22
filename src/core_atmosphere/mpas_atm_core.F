@@ -562,9 +562,19 @@ module atm_core
          call mpas_log_write('Error writing one or more output streams',                                         messageType=MPAS_LOG_ERR)
          call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
       end if
+
+      currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+
       if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
          call mpas_log_write('Timing for diagnostic computation: $r s', realArgs=(/real(diag_stop_time - diag_start_time, kind=RKIND)/))
          call mpas_log_write('Timing for stream output: $r s', realArgs=(/real(output_stop_time - output_start_time, kind=RKIND)/))
+         call mpas_threading_barrier()
+         if (domain % dminfo % my_proc_id == 0) then
+             call mpas_log_write(' Creating the MPAS flag file at '//trim(timeStamp))
+             open(22,file="mpasout_flag."//timeStamp(1:13)//"."//timeStamp(15:16)//"."//timeStamp(18:19),form='formatted',status='replace')
+             close(22)
+         end if
       end if
 
       call mpas_atm_diag_reset()
@@ -711,9 +721,19 @@ module atm_core
             call mpas_log_write('Error writing one or more output streams',                                         messageType=MPAS_LOG_ERR)
             call mpas_log_write('********************************************************************************', messageType=MPAS_LOG_CRIT)
          end if
+
+         currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+         call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+
          if (MPAS_stream_mgr_ringing_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
             call mpas_log_write('Timing for diagnostic computation: $r s', realArgs=(/real(diag_stop_time - diag_start_time, kind=RKIND)/))
             call mpas_log_write('Timing for stream output: $r s', realArgs=(/real(output_stop_time - output_start_time, kind=RKIND)/))
+            call mpas_threading_barrier()
+            if (domain % dminfo % my_proc_id == 0) then
+                call mpas_log_write(' Creating the MPAS flag file at '//trim(timeStamp))
+                open(22,file="mpasout_flag."//timeStamp(1:13)//"."//timeStamp(15:16)//"."//timeStamp(18:19),form='formatted',status='replace')
+                close(22)
+            end if
          end if
 
          ! reset any diagnostics here
