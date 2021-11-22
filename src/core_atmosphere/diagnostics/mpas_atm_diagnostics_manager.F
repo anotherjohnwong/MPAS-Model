@@ -37,6 +37,7 @@ module mpas_atm_diagnostics_manager
         use convective_diagnostics, only : convective_diagnostics_setup
         use pv_diagnostics, only : pv_diagnostics_setup
         use soundings, only : soundings_setup
+        use twc_diagnostics, only : twc_diagnostics_setup
 
         implicit none
 
@@ -57,6 +58,7 @@ module mpas_atm_diagnostics_manager
         call convective_diagnostics_setup(structs, clock)
         call pv_diagnostics_setup(structs, clock)
         call soundings_setup(configs, structs, clock, dminfo)
+        call twc_diagnostics_setup(config, structs)
 
     end subroutine mpas_atm_diag_setup
 
@@ -75,12 +77,14 @@ module mpas_atm_diagnostics_manager
 
         use diagnostic_template, only : diagnostic_template_update
         use convective_diagnostics, only : convective_diagnostics_update
+        use twc_diagnostics, only : twc_diagnostics_update
 
         implicit none
 
 
         call diagnostic_template_update()
         call convective_diagnostics_update()
+        call twc_diagnostics_update()
 
     end subroutine mpas_atm_diag_update
 
@@ -102,6 +106,7 @@ module mpas_atm_diagnostics_manager
         use convective_diagnostics, only : convective_diagnostics_compute
         use pv_diagnostics, only : pv_diagnostics_compute
         use soundings, only : soundings_compute
+        use twc_diagnostics, only : twc_diagnostics_compute
 
         implicit none
 
@@ -111,6 +116,7 @@ module mpas_atm_diagnostics_manager
         call convective_diagnostics_compute()
         call pv_diagnostics_compute()
         call soundings_compute()
+        call twc_diagnostics_compute()
 
     end subroutine mpas_atm_diag_compute
 
@@ -129,12 +135,14 @@ module mpas_atm_diagnostics_manager
 
         use diagnostic_template, only : diagnostic_template_reset
         use convective_diagnostics, only : convective_diagnostics_reset
+        use twc_diagnostics, only : twc_diagnostics_reset
 
         implicit none
 
 
         call diagnostic_template_reset()
         call convective_diagnostics_reset()
+        call twc_diagnostics_reset()
 
     end subroutine mpas_atm_diag_reset
 

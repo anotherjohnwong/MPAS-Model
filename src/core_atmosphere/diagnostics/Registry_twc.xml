@@ -1,0 +1,29 @@
+<!-- ******************************* -->
+<!-- TWC diagnostics for MPAS7 verification    -->
+<!-- Do not use in production        -->
+<!-- ******************************* -->
+
+<var_struct name="diag" time_levs="1">
+
+<var name="dewpoint_2m"       type="real"     dimensions="nCells Time" units="K"
+description="Dewpoint temperature at 2 meters AGL [WINC: DPT.ZSFC@2m]"/>
+         
+<var name="refl10cm_prate"    type="real"     dimensions="nCells Time" units="dBZ"
+description="Reflectivity derived from surface total precipitation rate [WINC: DBZ.SFC]"/>
+
+<var name="rain_bucket"       type="real"     dimensions="nCells Time" units="mm"
+     description="Rain bucket, resets on output"/>
+
+<var name="conv_bucket"       type="real"     dimensions="nCells Time" units="mm"
+     description="Convective rain bucket, resets on output"/>
+
+<var name="snow_bucket"       type="real"     dimensions="nCells Time" units="mm"
+     description="Snow bucket, resets on output"/>
+
+<var name="snow_total"        type="real"     dimensions="nCells Time" units="m"
+    description="Snow total using kuchera scheme [WINC: CMLTSNOW.SFC]"/>
+
+<var name="snow_ratio"        type="real"     dimensions="nCells Time" units="ratio"
+    description="Kuchera snow ratio [WINC: SNOWRATIO.SFC]"/>
+    
+</var_struct>
