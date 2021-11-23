@@ -58,6 +58,7 @@ module twc_diagnostics
     subroutine twc_diagnostics_update()
         implicit none
 
+        real (kind=RKIND), dimension(:), pointer :: rainncv, raincv, snowncv, graupelncv
         real (kind=RKIND), dimension(:), pointer :: rain_bucket, conv_bucket, snow_bucket
         real (kind=RKIND), dimension(:), pointer :: snow_total, snow_ratio
 
@@ -65,7 +66,7 @@ module twc_diagnostics
         real :: rain_dt, conv_dt, snow_dt
 
         if (need_snow_ratio) then
-            call update_kuchera_snowratio()
+            call update_kuchera_snow_ratio()
         end if
 
         if (need_rain .or. need_conv .or. need_snow .or. need_snow_total) then
@@ -91,14 +92,14 @@ module twc_diagnostics
                 rain_bucket(iCell) = rain_bucket(iCell) + rain_dt
                 conv_bucket(iCell) = conv_bucket(iCell) + conv_dt
                 snow_bucket(iCell) = snow_bucket(iCell) + snow_dt
-                snow_total(iCell) = snow_total(iCell) + snow_dt * snowratio(iCell) * 0.001_RKIND
+                snow_total(iCell) = snow_total(iCell) + snow_dt * snow_ratio(iCell) * 0.001_RKIND
             end do
         end if
 
     end subroutine twc_diagnostics_update
 
 
-    subroutine update_kuchera_snowratio()
+    subroutine update_kuchera_snow_ratio()
         use mpas_constants, only : rvord
 
         implicit none
@@ -111,6 +112,7 @@ module twc_diagnostics
         real (kind=RKIND), dimension(:,:), pointer :: pressure_p
         real (kind=RKIND), dimension(:), pointer :: snowncv
         real (kind=RKIND), dimension(:), pointer :: graupelncv
+        real (kind=RKIND), dimension(:), pointer :: snow_ratio
 
         real (kind=RKIND) :: snow_ratio_tmp, temperature_max, pressure, temperature
         integer :: iCell, k
@@ -129,11 +131,11 @@ module twc_diagnostics
         call mpas_pool_get_array(phys, 'snowncv', snowncv)
         call mpas_pool_get_array(phys, 'graupelncv', graupelncv)
         ! Outputs
-        call mpas_pool_get_array(diag, 'snowratio', snowratio)
+        call mpas_pool_get_array(diag, 'snow_ratio', snow_ratio)
 
         do iCell = 1, nCells
             snow_ratio_tmp = snow_ratio_default
-            if (snowcv(iCell) + graupelncv(iCell) > 0) then
+            if (snowncv(iCell) + graupelncv(iCell) > 0) then
                 temperature_max = 0._RKIND
                 kloop: do k = 1, nVertLevels-1
                    pressure = (pressure_p(k,iCell)+pressure_b(k,iCell))/100._RKIND
@@ -151,10 +153,10 @@ module twc_diagnostics
                 end if
 
             end if
-            snowratio(iCell) = max(snow_ratio_min, min(snow_ratio_tmp, snow_ratio_max))
+            snow_ratio(iCell) = max(snow_ratio_min, min(snow_ratio_tmp, snow_ratio_max))
         end do
 
-    end subroutine update_kuchera_snowratio
+    end subroutine update_kuchera_snow_ratio
 
 
 !
@@ -173,7 +175,7 @@ module twc_diagnostics
             call compute_refl10cm_prate()
         end if
 
-    end subroutine twc_diagnostics_compute()
+    end subroutine twc_diagnostics_compute
 
 
 
@@ -205,7 +207,7 @@ module twc_diagnostics
     subroutine compute_refl10cm_prate()
         implicit none
 
-        real (kind=RKIND), dimension(:), pointer :: rainncv, raincv
+        real (kind=RKIND), dimension(:), pointer :: rainncv, raincv, refl
         real (kind=RKIND) :: prate
         integer :: iCell
 
@@ -231,6 +233,7 @@ module twc_diagnostics
 !
     subroutine twc_diagnostics_reset()
         use mpas_pool_routines, only : mpas_pool_get_array
+        use mpas_atm_diagnostics_utils, only : MPAS_field_will_be_written
 
         implicit none
 

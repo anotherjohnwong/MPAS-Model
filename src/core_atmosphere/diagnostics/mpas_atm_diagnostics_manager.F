@@ -58,7 +58,7 @@ module mpas_atm_diagnostics_manager
         call convective_diagnostics_setup(structs, clock)
         call pv_diagnostics_setup(structs, clock)
         call soundings_setup(configs, structs, clock, dminfo)
-        call twc_diagnostics_setup(config, structs)
+        call twc_diagnostics_setup(configs, structs)
 
     end subroutine mpas_atm_diag_setup
 
