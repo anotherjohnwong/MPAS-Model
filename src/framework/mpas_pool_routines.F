@@ -81,6 +81,21 @@ module mpas_pool_routines
       module procedure mpas_pool_get_array_1d_char
    end interface
 
+   interface mpas_pool_get_array_gpu
+      module procedure mpas_pool_get_array_0d_real_gpu
+      module procedure mpas_pool_get_array_1d_real_gpu
+      module procedure mpas_pool_get_array_2d_real_gpu
+      module procedure mpas_pool_get_array_3d_real_gpu
+      module procedure mpas_pool_get_array_4d_real_gpu
+      module procedure mpas_pool_get_array_5d_real_gpu
+      module procedure mpas_pool_get_array_0d_int_gpu
+      module procedure mpas_pool_get_array_1d_int_gpu
+      module procedure mpas_pool_get_array_2d_int_gpu
+      module procedure mpas_pool_get_array_3d_int_gpu
+      module procedure mpas_pool_get_array_0d_char_gpu
+      module procedure mpas_pool_get_array_1d_char_gpu
+   end interface
+
    interface mpas_pool_add_config
       module procedure mpas_pool_add_config_real
       module procedure mpas_pool_add_config_int
@@ -106,6 +121,10 @@ module mpas_pool_routines
    end interface
 
    integer :: currentErrorLevel = MPAS_POOL_SILENT
+
+#ifdef CORE_ATMOSPHERE
+    integer, parameter, private :: ROLE_INTEGRATE = ibset(0,0)
+#endif
 
    contains
 
@@ -209,7 +228,7 @@ module mpas_pool_routines
       integer :: i, j
       type (mpas_pool_member_type), pointer :: ptr
       type (mpas_pool_data_type), pointer :: dptr
-      integer :: local_err, threadNum
+      integer :: threadNum
 
       threadNum = mpas_threading_get_thread_num()
 
@@ -224,9 +243,9 @@ module mpas_pool_routines
                if (ptr % contentsType == MPAS_POOL_DIMENSION) then
    
                   if (ptr % data % contentsDims > 0) then
-                     deallocate(ptr % data % simple_int_arr, stat=local_err)
+                     deallocate(ptr % data % simple_int_arr)
                   else
-                     deallocate(ptr % data % simple_int, stat=local_err)
+                     deallocate(ptr % data % simple_int)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_CONFIG) then
@@ -234,13 +253,13 @@ module mpas_pool_routines
                   dptr => ptr % data
    
                   if (dptr % contentsType == MPAS_POOL_REAL) then
-                     deallocate(dptr % simple_real, stat=local_err)
+                     deallocate(dptr % simple_real)
                   else if (dptr % contentsType == MPAS_POOL_INTEGER) then
-                     deallocate(dptr % simple_int, stat=local_err)
+                     deallocate(dptr % simple_int)
                   else if (dptr % contentsType == MPAS_POOL_CHARACTER) then
-                     deallocate(dptr % simple_char, stat=local_err)
+                     deallocate(dptr % simple_char)
                   else if (dptr % contentsType == MPAS_POOL_LOGICAL) then
-                     deallocate(dptr % simple_logical, stat=local_err)
+                     deallocate(dptr % simple_logical)
                   end if
    
                else if (ptr % contentsType == MPAS_POOL_FIELD) then
@@ -249,138 +268,96 @@ module mpas_pool_routines
    
                   ! Do this through brute force...
                   if (associated(dptr % r0)) then
-                     deallocate(dptr % r0, stat=local_err)
+                     call mpas_deallocate_field(dptr % r0)
                   else if (associated(dptr % r1)) then
-                     if (associated(dptr % r1 % array)) then
-                        deallocate(dptr % r1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r1, stat=local_err)
+                     call mpas_deallocate_field(dptr % r1)
                   else if (associated(dptr % r2)) then
-                     if (associated(dptr % r2 % array)) then
-                        deallocate(dptr % r2 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r2, stat=local_err)
+                     call mpas_deallocate_field(dptr % r2)
                   else if (associated(dptr % r3)) then
-                     if (associated(dptr % r3 % array)) then
-                        deallocate(dptr % r3 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r3, stat=local_err)
+                     call mpas_deallocate_field(dptr % r3)
                   else if (associated(dptr % r4)) then
-                     if (associated(dptr % r4 % array)) then
-                        deallocate(dptr % r4 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r4, stat=local_err)
+                     call mpas_deallocate_field(dptr % r4)
                   else if (associated(dptr % r5)) then
-                     if (associated(dptr % r5 % array)) then
-                        deallocate(dptr % r5 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % r5, stat=local_err)
+                     call mpas_deallocate_field(dptr % r5)
                   else if (associated(dptr % i0)) then
-                     deallocate(dptr % i0, stat=local_err)
+                     call mpas_deallocate_field(dptr % i0)
                   else if (associated(dptr % i1)) then
-                     if (associated(dptr % i1 % array)) then
-                        deallocate(dptr % i1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i1, stat=local_err)
+                     call mpas_deallocate_field(dptr % i1)
                   else if (associated(dptr % i2)) then
-                     if (associated(dptr % i2 % array)) then
-                        deallocate(dptr % i2 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i2, stat=local_err)
+                     call mpas_deallocate_field(dptr % i2)
                   else if (associated(dptr % i3)) then
-                     if (associated(dptr % i3 % array)) then
-                        deallocate(dptr % i3 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % i3, stat=local_err)
+                     call mpas_deallocate_field(dptr % i3)
                   else if (associated(dptr % c0)) then
-                     deallocate(dptr % c0, stat=local_err)
+                     call mpas_deallocate_field(dptr % c0)
                   else if (associated(dptr % c1)) then
-                     if (associated(dptr % c1 % array)) then
-                        deallocate(dptr % c1 % array, stat=local_err)
-                     end if
-   
-                     deallocate(dptr % c1, stat=local_err)
+                     call mpas_deallocate_field(dptr % c1)
                   else if (associated(dptr % l0)) then
-                     deallocate(dptr % l0, stat=local_err)
+                     call mpas_deallocate_field(dptr % l0)
                   else if (associated(dptr % r0a)) then
-                     deallocate(dptr % r0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % r0a(j))
+                     end do
+                     deallocate(dptr % r0a)
                   else if (associated(dptr % r1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r1a(j) % array)) then
-                           deallocate(dptr % r1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r1a(j))
                      end do
-                     deallocate(dptr % r1a, stat=local_err)
+                     deallocate(dptr % r1a)
                   else if (associated(dptr % r2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r2a(j) % array)) then
-                           deallocate(dptr % r2a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r2a(j))
                      end do
-                     deallocate(dptr % r2a, stat=local_err)
+                     deallocate(dptr % r2a)
                   else if (associated(dptr % r3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r3a(j) % array)) then
-                           deallocate(dptr % r3a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r3a(j))
                      end do
-                     deallocate(dptr % r3a, stat=local_err)
+                     deallocate(dptr % r3a)
                   else if (associated(dptr % r4a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r4a(j) % array)) then
-                           deallocate(dptr % r4a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r4a(j))
                      end do
-                     deallocate(dptr % r4a, stat=local_err)
+                     deallocate(dptr % r4a)
                   else if (associated(dptr % r5a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % r5a(j) % array)) then
-                           deallocate(dptr % r5a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % r5a(j))
                      end do
-                     deallocate(dptr % r5a, stat=local_err)
+                     deallocate(dptr % r5a)
                   else if (associated(dptr % i0a)) then
-                     deallocate(dptr % i0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % i0a(j))
+                     end do
+                     deallocate(dptr % i0a)
                   else if (associated(dptr % i1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i1a(j) % array)) then
-                           deallocate(dptr % i1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i1a(j))
                      end do
-                     deallocate(dptr % i1a, stat=local_err)
+                     deallocate(dptr % i1a)
                   else if (associated(dptr % i2a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i2a(j) % array)) then
-                           deallocate(dptr % i2a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i2a(j))
                      end do
-                     deallocate(dptr % i2a, stat=local_err)
+                     deallocate(dptr % i2a)
                   else if (associated(dptr % i3a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % i3a(j) % array)) then
-                           deallocate(dptr % i3a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % i3a(j))
                      end do
-                     deallocate(dptr % i3a, stat=local_err)
+                     deallocate(dptr % i3a)
                   else if (associated(dptr % c0a)) then
-                     deallocate(dptr % c0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % c0a(j))
+                     end do
+                     deallocate(dptr % c0a)
                   else if (associated(dptr % c1a)) then
                      do j=1,dptr % contentsTimeLevs
-                        if (associated(dptr % c1a(j) % array)) then
-                           deallocate(dptr % c1a(j) % array, stat=local_err)
-                        end if
+                        call mpas_deallocate_field_target(dptr % c1a(j))
                      end do
-                     deallocate(dptr % c1a, stat=local_err)
+                     deallocate(dptr % c1a)
                   else if (associated(dptr % l0a)) then
-                     deallocate(dptr % l0a, stat=local_err)
+                     do j=1,dptr % contentsTimeLevs
+                        call mpas_deallocate_field_target(dptr % l0a(j))
+                     end do
+                     deallocate(dptr % l0a)
                   else
                      call pool_mesg('While destroying pool, member '//trim(ptr % key)//' has no valid field pointers.')
                   end if
@@ -390,14 +367,14 @@ module mpas_pool_routines
                   call mpas_pool_destroy_pool(ptr % data % p)
    
                end if
-               deallocate(ptr % data, stat=local_err)
-               deallocate(ptr, stat=local_err)
+               deallocate(ptr % data)
+               deallocate(ptr)
             end do
    
          end do
    
-         deallocate(inPool % table, stat=local_err)
-         deallocate(inPool, stat=local_err)
+         deallocate(inPool % table)
+         deallocate(inPool)
       end if
 
    end subroutine mpas_pool_destroy_pool!}}}
@@ -1861,7 +1838,7 @@ module mpas_pool_routines
                      end if
                   else if (poolItr % nDims == 4) then
                      if (poolItr % nTimeLevels > 1) then
-                        decompType = pool_get_member_decomp_type(poolMem % r4 % dimNames(4))
+                        decompType = pool_get_member_decomp_type(poolMem % r4a(1) % dimNames(4))
 
                         if (decompType == MPAS_DECOMP_CELLS) then
                            do i = 1, poolItr % nTimeLevels
@@ -4238,6 +4215,33 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_0d_real!}}}
 
+   subroutine mpas_pool_get_array_0d_real_gpu(inPool, key, scalar, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), pointer :: scalar
+      integer, intent(in), optional :: timeLevel
+
+      type (field0DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+      
+      call mpas_pool_get_field_0d_real(inPool, key, field, timeLevel)
+
+      coupler => field%block%domain%mpas_cpl
+
+      nullify(scalar)
+      if (associated(field)) then 
+              scalar => field % scalar
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%scalar)
+              end if
+#endif
+      end if
+   end subroutine mpas_pool_get_array_0d_real_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_1d_real
@@ -4268,6 +4272,33 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_1d_real!}}}
 
+   subroutine mpas_pool_get_array_1d_real_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), dimension(:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field1DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_1d_real(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+   end subroutine mpas_pool_get_array_1d_real_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_2d_real
@@ -4297,6 +4328,34 @@ module mpas_pool_routines
       if (associated(field)) array => field % array
 
    end subroutine mpas_pool_get_array_2d_real!}}}
+
+   subroutine mpas_pool_get_array_2d_real_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), dimension(:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field2DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_2d_real(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_2d_real_gpu!}}}
 
 
 !-----------------------------------------------------------------------
@@ -4329,6 +4388,34 @@ module mpas_pool_routines
    end subroutine mpas_pool_get_array_3d_real!}}}
 
 
+   subroutine mpas_pool_get_array_3d_real_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), dimension(:,:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field3DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_3d_real(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_3d_real_gpu!}}}
+
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_4d_real
 !
@@ -4357,6 +4444,34 @@ module mpas_pool_routines
       if (associated(field)) array => field % array
 
    end subroutine mpas_pool_get_array_4d_real!}}}
+
+   subroutine mpas_pool_get_array_4d_real_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), dimension(:,:,:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field4DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_4d_real(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_4d_real_gpu!}}}
 
 
 !-----------------------------------------------------------------------
@@ -4388,6 +4503,34 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_5d_real!}}}
 
+   subroutine mpas_pool_get_array_5d_real_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field5DReal), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_5d_real(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_5d_real_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_0d_int
@@ -4417,6 +4560,34 @@ module mpas_pool_routines
       if (associated(field)) scalar => field % scalar
 
    end subroutine mpas_pool_get_array_0d_int!}}}
+
+   subroutine mpas_pool_get_array_0d_int_gpu(inPool, key, scalar, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer, pointer :: scalar
+      integer, intent(in), optional :: timeLevel
+
+      type (field0DInteger), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_0d_int(inPool, key, field, timeLevel)
+
+      nullify(scalar)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              scalar => field % scalar
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%scalar)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_0d_int_gpu!}}}
 
 
 !-----------------------------------------------------------------------
@@ -4448,6 +4619,34 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_1d_int!}}}
 
+   subroutine mpas_pool_get_array_1d_int_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer, dimension(:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field1DInteger), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_1d_int(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_1d_int_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_2d_int
@@ -4477,6 +4676,34 @@ module mpas_pool_routines
       if (associated(field)) array => field % array
 
    end subroutine mpas_pool_get_array_2d_int!}}}
+
+   subroutine mpas_pool_get_array_2d_int_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer, dimension(:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field2DInteger), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_2d_int(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_2d_int_gpu!}}}
 
 
 !-----------------------------------------------------------------------
@@ -4508,6 +4735,34 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_3d_int!}}}
 
+   subroutine mpas_pool_get_array_3d_int_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer, dimension(:,:,:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field3DInteger), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_3d_int(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_3d_int_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_0d_char
@@ -4538,6 +4793,34 @@ module mpas_pool_routines
 
    end subroutine mpas_pool_get_array_0d_char!}}}
 
+   subroutine mpas_pool_get_array_0d_char_gpu(inPool, key, string, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      character (len=StrKIND), pointer :: string
+      integer, intent(in), optional :: timeLevel
+
+      type (field0DChar), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_0d_char(inPool, key, field, timeLevel)
+
+      nullify(string)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              string => field % scalar
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%scalar)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_0d_char_gpu!}}}
+
 
 !-----------------------------------------------------------------------
 !  subroutine mpas_pool_get_array_1d_char
@@ -4567,6 +4850,34 @@ module mpas_pool_routines
       if (associated(field)) array => field % array
 
    end subroutine mpas_pool_get_array_1d_char!}}}
+
+   subroutine mpas_pool_get_array_1d_char_gpu(inPool, key, array, timeLevel)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      character (len=StrKIND), dimension(:), pointer :: array
+      integer, intent(in), optional :: timeLevel
+
+      type (field1DChar), pointer :: field
+      type (mpas_coupler_type), pointer :: coupler
+
+
+      call mpas_pool_get_field_1d_char(inPool, key, field, timeLevel)
+
+      nullify(array)
+      if (associated(field)) then 
+              coupler => field%block%domain%mpas_cpl
+              array => field % array
+#ifdef CORE_ATMOSPHERE
+              if (coupler % role_includes(ROLE_INTEGRATE)) then
+                      !$acc enter data copyin(field%array)
+              end if
+#endif
+      end if
+
+   end subroutine mpas_pool_get_array_1d_char_gpu!}}}
 
 
 !-----------------------------------------------------------------------
@@ -5142,7 +5453,7 @@ module mpas_pool_routines
 
       type (mpas_pool_type), intent(inout) :: inPool
       character (len=*), intent(in) :: key
-      type (mpas_pool_type), intent(in), target :: subPool
+      type (mpas_pool_type), pointer :: subPool
 
 
       type (mpas_pool_member_type), pointer :: newmem

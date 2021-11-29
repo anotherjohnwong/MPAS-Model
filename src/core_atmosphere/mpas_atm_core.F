@@ -869,6 +869,7 @@ module atm_core
       type (MPAS_TimeInterval_Type) :: xtimeTime
       integer :: s, s_n, s_d
       real (kind=RKIND) :: xtime_s
+      logical :: is_lagged
       integer :: ierr
 
       clock => domain % clock
@@ -885,7 +886,8 @@ module atm_core
 #ifdef DO_PHYSICS
       !proceed with physics if moist_physics is set to true:
       if(moist_physics) then
-         call physics_timetracker(domain,dt,clock,itimestep,xtime_s)
+         is_lagged = (mpas_cpl%role_is(ROLE_INTEGRATE) .or. mpas_cpl%role_is(ROLE_RADIATION))
+         call physics_timetracker(domain,dt,clock,itimestep,xtime_s,is_lagged)
          call physics_driver(domain,itimestep,xtime_s)
       endif
 #endif
