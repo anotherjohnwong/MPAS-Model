@@ -32,8 +32,6 @@
                      description="The number of atmospheric layers"/>
                 <dim name="nVertLevelsP1"      definition="nVertLevels+1"
                      description="The number of atmospheric levels, always one more than the number of layers"/>
-
-#ifdef DO_PHYSICS
                 <dim name="nMonths"            definition="namelist:months"
                      description="The number of months in a year"/>
                 <dim name="nSoilLevels"        definition="namelist:num_soil_layers"
@@ -48,7 +46,6 @@
                      description="dimension of CAM radiation absorption save array"/>
                 <dim name="nVertLevelsP2"      definition="nVertLevels+2"
                      description="Two more than the number of atmospheric layers"/>
-#endif
         </dims>
 
 
@@ -398,21 +395,6 @@
 <!-- **************************************************************************************** -->
 
 	<streams>
-
-                <stream name="da_input" 
-                        type="input" 
-                        filename_template="x1.40962.init.nc" 
-                        input_interval="initial_only"
-                        immutable="true">
-
-                        <var name="theta"/>
-                        <var name="rho"/>
-                        <var name="surface_pressure"/>
-                        <var name="w"/>
-                        <var name="u"/>
-                        <var_array name="scalars"/>
-                </stream>
-
 		<stream name="input" 
                         type="input" 
                         filename_template="x1.40962.init.nc" 
@@ -496,12 +478,9 @@
 			<var name="rho_base"/>
 			<var name="theta_base"/>
 			<var name="surface_pressure"/>
-
-#ifdef DO_PHYSICS
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
-			<var name="ter"/>
 			<var name="isice_lu"/>
 			<var name="iswater_lu"/>
 			<var name="landmask"/>
@@ -541,7 +520,6 @@
 			<var name="ol3"/>
 			<var name="ol4"/>
 			<var name="h_oml_initial"/>
-#endif
 		</stream>
 
 		<stream name="restart" 
@@ -549,7 +527,6 @@
                         filename_template="restart.$Y-$M-$D_$h.$m.$s.nc" 
                         input_interval="initial_only" 
                         output_interval="1_00:00:00" 
-                        output_stop="none"
                         immutable="true">
 
 			<var name="latCell"/>
@@ -625,6 +602,13 @@
 			<var name="east"/>
 			<var name="north"/>
 			<var_array name="scalars"/>
+			<var name="rainprod" packages="mp_thompson_in"/>
+			<var name="evapprod" packages="mp_thompson_in"/>
+			<var name="re_cloud" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_ice" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="re_snow" packages="mp_thompson_in;mp_wsm6_in"/>
+			<var name="nt_c" packages="mp_thompson_in"/>
+			<var name="mu_c" packages="mp_thompson_in"/>
 			<var name="initial_time"/>
 			<var name="xtime"/>
 			<var name="u"/>
@@ -651,15 +635,6 @@
 			<var name="rtheta_p"/>
 			<var name="rho_p"/>
 			<var name="surface_pressure"/>
-
-#ifdef DO_PHYSICS
-			<var name="rainprod" packages="mp_thompson_in"/>
-			<var name="evapprod" packages="mp_thompson_in"/>
-			<var name="re_cloud" packages="mp_thompson_in;mp_wsm6_in"/>
-			<var name="re_ice" packages="mp_thompson_in;mp_wsm6_in"/>
-			<var name="re_snow" packages="mp_thompson_in;mp_wsm6_in"/>
-			<var name="nt_c" packages="mp_thompson_in"/>
-			<var name="mu_c" packages="mp_thompson_in"/>
                         <var name="tend_sfc_pressure"/>
 			<var name="rt_diabatic_tend"/>
 			<var name="nsteps_accum"/>
@@ -668,7 +643,6 @@
 			<var name="tday_accum"/>
 			<var name="tyear_mean"/>
 			<var name="tyear_accum"/>
-			<var name="refl10cm"/>
 			<var name="refl10cm_max"/>
 			<var name="i_rainnc"/>
 			<var name="rainncv"/>
@@ -693,9 +667,6 @@
                         <var name="tsq"/>
                         <var name="tke_pbl"/>
                         <var name="wstar"/>
-                        <var name="hgamt"/>
-                        <var name="hgamq"/>
-                        <var name="entpbl"/>
                         <var name="delta"/>
                         <var name="el_pbl"/>
                         <var name="ch"/>
@@ -831,6 +802,7 @@
 			<var name="rthratensw"/>
 			<var name="rthratenlw"/>
 			<var name="pin"/>
+			<var name="ozmixm"/>
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
@@ -875,14 +847,12 @@
 			<var name="h_oml_initial"/>
 			<var name="hu_oml"/>
 			<var name="hv_oml"/>
-#endif
 		</stream>
 
 		<stream name="output" 
                         type="output" 
                         filename_template="history.$Y-$M-$D_$h.$m.$s.nc" 
                         output_interval="6:00:00"
-                        output_stop="none"
                         runtime_format="separate_file">
 
 			<var name="latCell"/>
@@ -947,8 +917,6 @@
 			<var name="v_pv"/>
 			<var name="theta_pv"/>
 			<var name="vort_pv"/>
-			<var name="iLev_DT"/>
-#ifdef DO_PHYSICS
 			<var name="depv_dt_lw"/>
 			<var name="depv_dt_sw"/>
 			<var name="depv_dt_bl"/>
@@ -960,6 +928,7 @@
 			<var name="depv_dt_fric"/>
 			<var name="depv_dt_diab_pv"/>
 			<var name="depv_dt_fric_pv"/>
+			<var name="iLev_DT"/>
                         <!-- End Ertel PV diagnostics defined in diagnostics/Registry_pv.xml -->
 
 			<var name="i_rainnc"/>
@@ -1000,9 +969,8 @@
 			<var name="sh2o"/>
 			<var name="smois"/>
 			<var name="tslb"/>
-#endif
 		</stream>
-        
+
 		<stream name="diagnostics" 
                         type="output" 
                         filename_template="diag.$Y-$M-$D_$h.$m.$s.nc" 
@@ -1011,8 +979,20 @@
 
 			<var name="initial_time"/>
 			<var name="xtime"/>
+			<var name="olrtoa"/>
+			<var name="rainc"/>
+			<var name="rainnc"/>
+			<var name="refl10cm_max"/>
+			<var name="refl10cm_1km"/>
+			<var name="refl10cm_1km_max"/>
+			<var name="precipw"/>
+			<var name="u10"/>
+			<var name="v10"/>
+			<var name="q2"/>
+			<var name="t2m"/>
+			<var name="th2m"/>
 
-            <!-- Begin isobaric diagnostics defined in diagnostics/Registry_isobaric.xml -->
+                        <!-- Begin isobaric diagnostics defined in diagnostics/Registry_isobaric.xml -->
 			<var name="mslp"/>
 			<var name="relhum_200hPa"/>
 			<var name="relhum_250hPa"/>
@@ -1067,23 +1047,7 @@
 			<var name="z_isobaric"/>
 			<var name="z_iso_levels"/>
 			<var name="meanT_500_300"/>
-            <!-- End isobaric diagnostics defined in diagnostics/Registry_isobaric.xml -->
-
-#ifdef DO_PHYSICS
-			<var name="olrtoa"/>
-			<var name="rainc"/>
-			<var name="rainnc"/>
-			<var name="refl10cm"/>
-			<var name="refl10cm_max"/>
-			<var name="refl10cm_1km"/>
-			<var name="refl10cm_1km_max"/>
-			<var name="precipw"/>
-			<var name="u10"/>
-			<var name="v10"/>
-			<var name="q2"/>
-			<var name="t2m"/>
-			<var name="th2m"/>
-#endif
+                        <!-- End isobaric diagnostics defined in diagnostics/Registry_isobaric.xml -->
 
                         <!-- Begin convective diagnostics defined in diagnostics/Registry_convective.xml -->
                         <var name="cape"/>
@@ -1105,7 +1069,6 @@
 			<var name="wind_speed_level1_max"/>
                         <!-- End convective diagnostics defined in diagnostics/Registry_convective.xml -->
 
-#ifdef DO_PHYSICS
 			<var name="t_oml"/>
 			<var name="t_oml_initial"/>
 			<var name="t_oml_200m_initial"/>
@@ -1113,7 +1076,6 @@
 			<var name="h_oml_initial"/>
 			<var name="hu_oml"/>
 			<var name="hv_oml"/>
-#endif
 		</stream>
 
 		<stream name="surface" 
@@ -1123,10 +1085,8 @@
                         filename_interval="none"
                         runtime_format="separate_file">
 
-#ifdef DO_PHYSICS
 			<var name="sst"/>
 			<var name="xice"/>
-#endif
 		</stream>
 
 	        <stream name="iau" 
@@ -1470,11 +1430,6 @@
                 <var name="theta_m" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Moist potential temperature: theta*(1+q_v*R_v/R_d)"/>
 
-                <!-- When MPAS-A is used as a dycore in CAM, scalars are allocated at runtime via -->
-                <!-- a call to the atm_allocate_scalars routine from setup_block. The specific    --> 
-                <!-- constituent at each position in the scalars array is later set by code in    -->
-                <!-- the CAM-MPAS interface layer.                                                -->
-#ifndef MPAS_CAM_DYCORE
                 <var_array name="scalars" type="real" dimensions="nVertLevels nCells Time">
                         <var name="qv" array_group="moist" units="kg kg^{-1}"
                              description="Water vapor mixing ratio"/>
@@ -1507,9 +1462,7 @@
                              description="Rain number concentration"
                              packages="mp_thompson_in"/>
                 </var_array>
-#endif
 
-#ifdef DO_PHYSICS
                 <var_array name="aerosols" type="real" dimensions="nAerLevels nCells Time">
                         <var name="sul"     array_group="aer_cam" units="kg m^{-3}"
                              description="Sulfate soluble (SUL) aerosol concentration"/>
@@ -1548,7 +1501,6 @@
                              description="Volcanic (VOLC) aerosol concentration"/>
 
                 </var_array>
-#endif
         </var_struct>
 
         <var_struct name="diag" time_levs="1">
@@ -1791,11 +1743,6 @@
                 <var name="tend_sfc_pressure" type="real" dimensions="nCells Time" units="Pa s^{-1}"
                      description="Tendency of surface pressure"/>
 
-                <!-- When MPAS-A is used as a dycore in CAM, scalars are allocated at runtime via -->
-                <!-- a call to the atm_allocate_scalars routine from setup_block. The specific    --> 
-                <!-- constituent at each position in the scalars array is later set by code in    -->
-                <!-- the CAM-MPAS interface layer.                                                -->
-#ifndef MPAS_CAM_DYCORE
                 <!-- scalar tendencies -->
                 <var_array name="scalars_tend" type="real" dimensions="nVertLevels nCells Time">
                         <var name="tend_qv" name_in_code="qv" array_group="moist" units="kg m^{-3} s^{-1}"
@@ -1829,7 +1776,6 @@
                              description="Tendency of rain number concentration multiplied by dry air density divided by d(zeta)/dz"
                              packages="mp_thompson_in"/>
                 </var_array>
-#endif
         </var_struct>
 
         <!-- ===================================================================================== -->
@@ -1896,7 +1842,6 @@
 <!-- ================================================================================================== -->
 
 
-#ifdef DO_PHYSICS
         <nml_record name="physics" in_defaults="true">
                 <!-- NAMELIST VARIABLES ADDED FOR INITIALIZATION OF SURFACE CHARACTERISTICS: -->
                 <nml_option name="input_soil_data" type="character" default_value="STAS" in_defaults="false"
@@ -2003,11 +1948,6 @@
                      description="time interval between calls to parameterization of convection"
                      possible_values="`DD_HH:MM:SS' or `none'"/>
 
-                <nml_option name="config_w0avg_dt" type="real" default_value="0.0"
-                     units="s"
-                     description="w0avg time step, seconds"
-                     possible_values="Positive real values"/>
-
                 <nml_option name="config_pbl_interval" type="character" default_value="none" in_defaults="false"
                      units="-"
                      description="time interval between calls to parameterization of planetary boundary layer"
@@ -2026,16 +1966,6 @@
                 <nml_option name="config_bucket_update" type="character" default_value="none"
                      units="-"
                      description="time interval between updates of accumulated rain and radiation diagnostics"
-                     possible_values="`DD_HH:MM:SS' or `none'"/>
-
-                <nml_option name="config_bucket_precip_interval" type="character" default_value="none"
-                     units="-"
-                     description="time interval between reset of precipitation diagnostics"
-                     possible_values="`DD_HH:MM:SS' or `none'"/>
-
-                <nml_option name="config_bucket2_precip_interval" type="character" default_value="none"
-                     units="-"
-                     description="2nd of two time intervals between reset of precipitation diagnostics"
                      possible_values="`DD_HH:MM:SS' or `none'"/>
 
                 <nml_option name="config_physics_suite" type="character" default_value="mesoscale_reference" in_defaults="true"
@@ -2132,12 +2062,6 @@
                      units="s"
                      description="Relaxation time to initial values in 1-d OML"
                      possible_values="Non-negative real values"/>
-
-                <nml_option name="config_snowratio_scheme" type="character" default_value="static" in_defaults="false"
-                     units="-"
-                     description="configuration for snow ratio schemes"
-                     possible_values="'kuchera','cobb','noahsp','noahmp','static'"/>
-
         </nml_record>
 
         <var_struct name="diag_physics" time_levs="1">
@@ -2170,10 +2094,6 @@
                 <!-- ... PARAMETERIZATION OF CLOUD MICROPHYSICS:                                                        -->
                 <!-- ================================================================================================== -->
 
-                <var name="refl10cm" type="real" dimensions="nVertLevels nCells Time" units="dBZ"
-                     description="10 cm radar reflectivity"
-                     packages="mp_thompson_in;mp_wsm6_in"/>
-                     
                 <var name="refl10cm_max" type="real" dimensions="nCells Time" units="dBZ"
                      description="10 cm maximum radar reflectivity"
                      packages="mp_thompson_in;mp_wsm6_in"/>
@@ -2267,7 +2187,7 @@
 
                 <var name="raincv" type="real" dimensions="nCells Time" units="mm"
                      description="time-step convective precipitation"
-                     description="index of lowest level of convection"/>
+                     packages="cu_grell_freitas_in;cu_kain_fritsch_in;cu_tiedtke_in"/>
 
 
                 <!-- ... KAIN_FRITSCH ONLY: -->
@@ -2356,26 +2276,10 @@
                      description="vertical diffusion coefficient of water vapor and cloud condensates"
                      packages="bl_mynn_in;bl_ysu_in"/>
 
-                <var name="tke_pbl" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
-                     description="turbulent kinetic energy from PBL"
-                     packages="bl_mynn_in;bl_ysu_in"/>
-
 
                 <!-- YSU PBL SCHEME: -->
                 <var name="exch_h" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-1}"
                      description="exchange coefficient"
-                     packages="bl_ysu_in"/>
-
-                <var name="hgamt" type="real" dimensions="nCells Time" units="K"
-                     description="thermal perturbation"
-                     packages="bl_ysu_in"/>
-
-                <var name="hgamq" type="real" dimensions="nCells Time" units="kg kg^{-1}"
-                     description="moisture perturbation"
-                     packages="bl_ysu_in"/>
-
-                <var name="entpbl" type="real" dimensions="nCells Time" units="m^{-1}"
-                     description="entrainment from PBL"
                      packages="bl_ysu_in"/>
 
 
@@ -2402,6 +2306,10 @@
 
                 <var name="tsq" type="real" dimensions="nVertLevels nCells Time" units="K^{2}"
                      description="liquid water potential temperature variance"
+                     packages="bl_mynn_in"/>
+
+                <var name="tke_pbl" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
+                     description="turbulent kinetic energy from PBL"
                      packages="bl_mynn_in"/>
 
                 <var name="dqke" type="real" dimensions="nVertLevels nCells Time" units="m^{2} s^{-2}"
@@ -2641,9 +2549,6 @@
 
                 <var name="swdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="clear-sky downward surface shortwave radiation flux"/>
-                     
-                <var name="swdnbdn" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky downward direct normal surface shortwave radiation flux"/>
 
                 <var name="swdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2955,15 +2860,6 @@
         </var_struct>
 
         <var_struct name="tend_physics" time_levs="1">
-
-                <!-- Scratch variables used when propagating cell-centered winds to edges -->
-                <var name="tend_uzonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="Total cell-centered zonal wind tendency from physics"
-                     persistence="scratch" />
-
-                <var name="tend_umerid" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1} s^{-1}"
-                     description="Total cell-centered meridional wind tendency from physics"
-                     persistence="scratch" />
  
                 <!-- ================================================================================================== -->
                 <!-- TENDENCIES FROM PARAMETERIZATION OF CONVECTION:                                                    -->
@@ -3062,7 +2958,7 @@
                      description="tendency of potential temperature due to short wave radiation"/>
 
                 <var name="rthratenlw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="tendency of potential temperature due to long wave radiation"/>
+                     description="tendency of potential temperature due to short wave radiation"/>
         </var_struct>
 
 
@@ -3201,7 +3097,6 @@
                 <var name="ol4" type="real" dimensions="nCells" units="unitless"
                      description="directional asymmetry function of orography"/>
         </var_struct>
-#endif
 
         <var_struct name="tend_iau" time_levs="1" packages="iau">
 			

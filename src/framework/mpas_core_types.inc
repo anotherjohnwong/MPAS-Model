@@ -64,13 +64,12 @@
    end interface
 
    abstract interface
-      function mpas_setup_log_function(logInfo, domain, unitNumbers) result(iErr)
+      function mpas_setup_log_function(logInfo, domain) result(iErr)
          import mpas_log_type
          import domain_type
 
          type (mpas_log_type), pointer, intent(inout) :: logInfo
          type (domain_type), pointer, intent(in) :: domain
-         integer, dimension(2), intent(in), optional :: unitNumbers
          integer :: iErr
       end function mpas_setup_log_function
    end interface
@@ -173,12 +172,6 @@
       procedure (mpas_setup_immutable_streams_function), pointer, nopass :: setup_immutable_streams => null()
       procedure (mpas_setup_derived_dimensions_function), pointer, nopass :: setup_derived_dimensions => null()
       procedure (mpas_setup_decomposed_dimensions_function), pointer, nopass :: setup_decomposed_dimensions => null()
-
-      ! Core component role function pointers
-      procedure (mpas_coupler_role_function), pointer, nopass :: component_role
-      procedure (mpas_coupler_roleleader_function), pointer, nopass :: component_role_leader
-      procedure (mpas_coupler_role_is_function), pointer, nopass :: component_role_is
-      procedure (mpas_coupler_role_incl_function), pointer, nopass :: component_role_includes
 
       ! core_type is a linked list
       type (core_type), pointer :: next => null()

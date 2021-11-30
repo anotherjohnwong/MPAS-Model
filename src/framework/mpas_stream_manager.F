@@ -47,23 +47,6 @@ module mpas_stream_manager
               MPAS_get_stream_filename, &
               MPAS_build_stream_filename
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    !                  IMPORTANT NOTE for {pre,post}write_reindex
-    !
-    ! Caution is needed if calling the {pre,post}write_reindex routines directly
-    ! from outside of the stream manager. These two routines make use of module
-    ! state to save and retrieve pointers to the original indexing arrays. Problems
-    ! can arise, for example, if external code calls prewrite_reindex, then makes
-    ! a call to write output streams via the stream manager: in this case, pointers
-    ! set by the external call to prewrite_reindex will be overwritten by the
-    ! internal call to prewrite_reindex within mpas_stream_mgr_write.
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    public :: prewrite_reindex, &    ! Please see note above...
-              postwrite_reindex, &   ! Please see note above...
-              postread_reindex
-
     private
 
     interface MPAS_stream_mgr_set_property
@@ -1600,7 +1583,6 @@ module mpas_stream_manager
             end if
         end if
 
-        
         if ( threadNum == 0 ) then
            if (local_direction == MPAS_STREAM_INPUT .or. local_direction == MPAS_STREAM_INPUT_OUTPUT) then
                if (associated(stream)) then
@@ -1957,7 +1939,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_int
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -2021,7 +2003,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_char
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -2131,7 +2113,7 @@ module mpas_stream_manager
     !-----------------------------------------------------------------------
     !  routine MPAS_stream_mgr_get_property_logical
     !
-    !> \brief Sets a property of a stream in an MPAS stream manager.
+    !> \brief Gets a property of a stream in an MPAS stream manager.
     !> \author Michael Duda, Doug Jacobsen
     !> \date   13 June 2014
     !> \details
@@ -3213,7 +3195,7 @@ module mpas_stream_manager
                    ! Look for exact record (in the case of overwriting)
                    ! This also gets the number of records in the file.
                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords, local_ierr/))
+                   STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
     
                    if ( stream % nRecords == 0 ) then
                        ! If we didn't find an exact time, set record to point to the end of the file.
@@ -3301,7 +3283,6 @@ module mpas_stream_manager
                        ! Look for exact record (in the case of overwriting)
                        ! This also gets the number of records in the file.
                        stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
-                       STREAM_DEBUG_WRITE(' -- Seeked record is: ' COMMA stream % nRecords COMMA ' with current records equal to ' COMMA maxRecords COMMA ' and an error of ' COMMA local_ierr)
                        STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
            
                        if ( stream % nRecords == 0 ) then
@@ -4833,10 +4814,6 @@ module mpas_stream_manager
     !>  indexed fields in module variables *_save, and allocate new arrays for
     !>  the fields, which are set to contain global indices.
     !>  This routine should be called immediately before a write of a stream.
-    !>
-    !>  IMPORTANT NOTE: Before calling this routine from outside of the stream
-    !>                  manager module, please read the "IMPORTANT NOTE" near
-    !>                  the top of this module where this routine is made public.
     !
     !-----------------------------------------------------------------------
     subroutine prewrite_reindex(allFields, streamFields) !{{{
@@ -5136,10 +5113,6 @@ module mpas_stream_manager
     !> 
     !>  NB: Even if the write of a stream fails, it is important to stil call
     !>      this routine to reset the connectivity fields to contain local indices.
-    !>
-    !>  IMPORTANT NOTE: Before calling this routine from outside of the stream
-    !>                  manager module, please read the "IMPORTANT NOTE" near
-    !>                  the top of this module where this routine is made public.
     !
     !-----------------------------------------------------------------------
     subroutine postwrite_reindex(allFields, streamFields) !{{{
@@ -5811,7 +5784,7 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
     use mpas_c_interfacing, only : mpas_c_to_f_string
     use iso_c_binding, only : c_char, c_int, c_ptr, c_f_pointer
     use mpas_derived_types, only : MPAS_streamManager_type, &
-                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, &
+                                        MPAS_STREAM_MGR_NOERR, MPAS_STREAM_PROPERTY_FILENAME, MPAS_STREAM_PROPERTY_ACTIVE, &
                                         MPAS_STREAM_PROPERTY_FILENAME_INTV, MPAS_STREAM_PROPERTY_REF_TIME, &
                                         MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_STREAM_PROPERTY_PRECISION, &
                                         MPAS_STREAM_PROPERTY_CLOBBER, MPAS_STREAM_CLOBBER_NEVER, MPAS_STREAM_CLOBBER_APPEND, &
@@ -5923,6 +5896,10 @@ subroutine stream_mgr_create_stream_c(manager_c, streamID_c, direction_c, filena
 
     if (trim(filename_interval) /= 'none') then
         call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_FILENAME_INTV, filename_interval, ierr=ierr)
+    end if
+
+    if (direction_c == 4) then
+       call MPAS_stream_mgr_set_property(manager, streamID, MPAS_STREAM_PROPERTY_ACTIVE, .false., ierr=ierr)
     end if
 
     if (ierr == MPAS_STREAM_MGR_NOERR) then
@@ -6183,7 +6160,6 @@ subroutine stream_mgr_add_pkg_c(manager_c, streamID_c, package_c, ierr_c) bind(c
 
     type (MPAS_streamManager_type), pointer :: manager
     character(len=StrKIND) :: streamID, package
-    integer :: idirection
     integer :: ierr
 
 

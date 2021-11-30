@@ -20,10 +20,6 @@
         <var name="vort_pv" type="real" dimensions="nCells Time" units="s^{-1}"
              description="Relative vertical vorticity on dynamic tropopause"/>
 
-        <var name="iLev_DT" type="integer" dimensions="nCells Time" units="-"
-             description="Lowest vertical level at or above dynamic tropopause (.lt.1 if 2 PVU below column; .gt.nLevels if 2PVU above column)"/>
-
-#ifdef DO_PHYSICS
         <var name="depv_dt_lw" type="real" dimensions="nVertLevels nCells Time" units="PVU s^{-1}"
              description="Diabatic EPV tendency from longwave radiation"/>
 
@@ -62,7 +58,9 @@
 
         <var name="depv_dt_fric_pv" type="real" dimensions="nCells Time" units="PVU s^{-1}"
              description="Frictional EPV tendency on dynamic tropopause"/>
-#endif
+
+        <var name="iLev_DT" type="integer" dimensions="nCells Time" units="-"
+             description="Lowest vertical level at or above dynamic tropopause (.lt.1 if 2 PVU below column; .gt.nLevels if 2PVU above column)"/>
 
 </var_struct>
 

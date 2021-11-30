@@ -27,7 +27,7 @@ twc_diagnostics.o : mpas_atm_diagnostics_utils.o
 
 OBJS = mpas_atm_diagnostics_manager.o mpas_atm_diagnostics_utils.o
 
-all: $(DIAGNOSTIC_MODULES) $(OBJS)
+all: $(DIAGNOSTIC_MODULS) $(OBJS)
 
 mpas_atm_diagnostics_manager.o: mpas_atm_diagnostics_utils.o $(DIAGNOSTIC_MODULES)
 
