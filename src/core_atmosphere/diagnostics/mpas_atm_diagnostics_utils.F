@@ -85,15 +85,15 @@ module mpas_atm_diagnostics_utils
     logical function mpas_field_will_be_written(fieldName)
 
         use mpas_kind_types, only : StrKIND
-        use mpas_derived_types, only : MPAS_STREAM_OUTPUT, MPAS_STREAM_INPUT_OUTPUT
+        use mpas_derived_types, only : MPAS_STREAM_OUTPUT, MPAS_STREAM_INPUT_OUTPUT, MPAS_stream_list_type
         use mpas_stream_manager, only : mpas_stream_mgr_begin_iteration, mpas_stream_mgr_get_next_stream, &
-                                        MPAS_stream_mgr_ringing_alarms, mpas_stream_mgr_get_next_field
+                                        MPAS_stream_mgr_ringing_alarms, MPAS_stream_mgr_get_next_field_ptr
 
         implicit none
 
         character(len=*), intent(in) :: fieldName
 
-        character (len=StrKIND) :: streamNameItr
+        type (MPAS_stream_list_type), pointer :: streamPtrItr
         character (len=StrKIND) :: fieldNameItr
         integer :: streamDirection
         logical :: streamActive
@@ -103,16 +103,16 @@ module mpas_atm_diagnostics_utils
         mpas_field_will_be_written = .false.
 
         call mpas_stream_mgr_begin_iteration(streamManager)
-        do while (mpas_stream_mgr_get_next_stream(streamManager, streamID = streamNameItr, &
+        do while (mpas_stream_mgr_get_next_stream(streamManager, streamPtr = streamPtrItr, &
                                                   directionProperty = streamDirection, activeProperty = streamActive))
 
             if (streamActive .and. ( streamDirection == MPAS_STREAM_OUTPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT )) then
 
-                if (MPAS_stream_mgr_ringing_alarms(streamManager, streamID=streamNameItr, &
+                if (MPAS_stream_mgr_ringing_alarms(streamManager, streamPtr=streamPtrItr, &
                                                    direction=MPAS_STREAM_OUTPUT, ierr=ierr)) then
 
-                    call mpas_stream_mgr_begin_iteration(streamManager, streamID=streamNameItr)
-                    do while (mpas_stream_mgr_get_next_field(streamManager, streamNameItr, fieldNameItr, isActive=fieldActive))
+                    call mpas_stream_mgr_begin_iteration(streamManager, streamPtr=streamPtrItr)
+                    do while (MPAS_stream_mgr_get_next_field_ptr(streamManager, streamPtrItr, fieldNameItr, isActive=fieldActive))
 
                         if (fieldActive .and. (fieldNameItr == fieldName)) then
                             mpas_field_will_be_written = .true.
@@ -149,9 +149,9 @@ module mpas_atm_diagnostics_utils
 
         use mpas_kind_types, only : StrKIND
         use mpas_derived_types, only : MPAS_STREAM_INPUT, MPAS_STREAM_OUTPUT, MPAS_STREAM_INPUT_OUTPUT, &
-                                       MPAS_STREAM_PROPERTY_RECORD_INTV
+                                       MPAS_STREAM_PROPERTY_RECORD_INTV, MPAS_stream_list_type
         use mpas_stream_manager, only : mpas_stream_mgr_begin_iteration, mpas_stream_mgr_get_next_stream, &
-                                        MPAS_stream_mgr_ringing_alarms, mpas_stream_mgr_get_next_field, &
+                                        MPAS_stream_mgr_ringing_alarms, MPAS_stream_mgr_get_next_field_ptr, &
                                         mpas_stream_mgr_get_property
 
         implicit none
@@ -161,6 +161,7 @@ module mpas_atm_diagnostics_utils
         logical, intent(in), optional :: includeInactive
 
         character (len=StrKIND) :: streamNameItr
+        type (MPAS_stream_list_type), pointer :: streamPtrItr
         character (len=StrKIND) :: fieldNameItr
         character (len=StrKIND) :: recordIntervalIn
         character (len=StrKIND) :: recordIntervalOut
@@ -189,7 +190,7 @@ module mpas_atm_diagnostics_utils
         mpas_stream_inclusion_count = 0
 
         call mpas_stream_mgr_begin_iteration(streamManager)
-        STREAM_LOOP: do while (mpas_stream_mgr_get_next_stream(streamManager, streamID = streamNameItr, &
+        STREAM_LOOP: do while (mpas_stream_mgr_get_next_stream(streamManager, streamID = streamNameItr, streamPtr = streamPtrItr, &
                                                                directionProperty = streamDirection, activeProperty = streamActive))
 
             call MPAS_stream_mgr_get_property(streamManager, trim(streamNameItr), MPAS_STREAM_PROPERTY_RECORD_INTV, &
@@ -215,8 +216,8 @@ module mpas_atm_diagnostics_utils
                                     .or. (local_direction == MPAS_STREAM_INPUT_OUTPUT) &
                                     .or. (streamDirection == MPAS_STREAM_INPUT_OUTPUT))) then
 
-                call mpas_stream_mgr_begin_iteration(streamManager, streamID=streamNameItr)
-                do while (mpas_stream_mgr_get_next_field(streamManager, streamNameItr, fieldNameItr, isActive=fieldActive))
+                call mpas_stream_mgr_begin_iteration(streamManager, streamPtr=streamPtrItr)
+                do while (MPAS_stream_mgr_get_next_field_ptr(streamManager, streamPtrItr, fieldNameItr, isActive=fieldActive))
 
                     if (fieldActive .and. (fieldNameItr == fieldName)) then
                         mpas_stream_inclusion_count = mpas_stream_inclusion_count + 1

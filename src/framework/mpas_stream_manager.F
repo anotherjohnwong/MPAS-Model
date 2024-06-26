@@ -1555,12 +1555,13 @@ module mpas_stream_manager
     !>  Note: This function doesn't support streamID regular expressions
     !
     !-----------------------------------------------------------------------
-    logical function MPAS_stream_mgr_ringing_alarms(manager, streamID, direction, ierr) !{{{
+    logical function MPAS_stream_mgr_ringing_alarms(manager, streamID, streamPtr, direction, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager
         character (len=*), intent(in), optional :: streamID
+        type (MPAS_stream_list_type), pointer, intent(in), optional :: streamPtr
         integer, intent(in), optional :: direction
         integer, intent(out), optional :: ierr
 
@@ -1592,7 +1593,9 @@ module mpas_stream_manager
         ! Check for optional streamID argument; default is to handle all alarms in the manager.
         !
         nullify(stream)
-        if (present(streamID)) then
+        if (present(streamPtr)) then
+            stream => streamPtr
+        else if (present(streamID)) then
             if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=local_ierr)) then
                 STREAM_DEBUG_WRITE('-- Stream '//trim(streamID)//' does not exist in stream manager.')
                 if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
@@ -5642,12 +5645,13 @@ module mpas_stream_manager
     !>  NOTE: This routine does not support regular expressions for StreamID
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_begin_iteration(manager, streamID, ierr) !{{{
+    subroutine MPAS_stream_mgr_begin_iteration(manager, streamID, streamPtr, ierr) !{{{
 
         implicit none
 
         type (MPAS_streamManager_type), intent(inout) :: manager     !< Input: Stream manager to begin iteration for
         character (len=*), intent(in), optional :: streamID          !< Input: Name of the stream to iterate over
+        type (MPAS_stream_list_type), pointer, intent(in), optional :: streamPtr  !< Input: Pointer to stream to iterate over
         integer, intent(out), optional :: ierr                       !< Output: Return error code
 
         type (MPAS_stream_list_type), pointer :: stream
@@ -5656,7 +5660,7 @@ module mpas_stream_manager
         threadNum = mpas_threading_get_thread_num()
 
 
-        if (.not. present(streamID)) then
+        if (.not.(present(streamID) .or. present(streamPtr))) then
 
            if ( threadNum == 0 ) then
               nullify(manager % currentStream)
@@ -5668,7 +5672,9 @@ module mpas_stream_manager
            ! Check that stream exists
            !
            nullify(stream)
-           if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
+           if ( present(streamPtr) ) then
+               stream => streamPtr
+           else if (.not. MPAS_stream_list_query(manager % streams, streamID, stream, ierr=err_local)) then
                STREAM_ERROR_WRITE('Requested stream '//trim(streamID)//' does not exist in stream manager')
                if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                return
@@ -5694,7 +5700,7 @@ module mpas_stream_manager
     !>  returns information about it.
     !
     !-----------------------------------------------------------------------
-    logical function MPAS_stream_mgr_get_next_stream(manager, streamID, directionProperty, activeProperty, & !{{{
+    logical function MPAS_stream_mgr_get_next_stream(manager, streamID, streamPtr, directionProperty, activeProperty, & !{{{
                                                      immutableProperty, filenameTemplateProperty, &
                                                      referenceTimeProperty, recordIntervalProperty, precisionProperty, &
                                                      filenameIntervalProperty, clobberProperty) result(validStream)
@@ -5703,6 +5709,7 @@ module mpas_stream_manager
 
         type (MPAS_streamManager_type), intent(inout) :: manager                   !< Input: Stream manager to iterate over
         character (len=StrKIND), intent(out), optional :: streamID                 !< Output: Name of next stream
+        type (MPAS_stream_list_type), pointer, intent(out), optional :: streamPtr  !< Output: Optional output of pointer to next stream
         integer, intent(out), optional :: directionProperty                        !< Output: Integer describing the direction of the stream
         logical, intent(out), optional :: activeProperty                           !< Output: Logical describing if the stream is active or not
         logical, intent(out), optional :: immutableProperty                        !< Output: Logical describing if the stream is immutable or not
@@ -5741,6 +5748,10 @@ module mpas_stream_manager
 
         if ( present(streamID) ) then
            streamID = manager % currentStream % name
+        end if
+
+        if ( present(streamPtr) ) then
+            streamPtr => manager % currentStream
         end if
 
         if ( present(directionProperty) ) then
@@ -5858,6 +5869,69 @@ module mpas_stream_manager
 
     end function MPAS_stream_mgr_get_next_field !}}}
 
+    !-----------------------------------------------------------------------
+    !  logical function MPAS_stream_mgr_get_next_field_ptr
+    !
+    !> \brief Retrieve the pointer of the next field in a stream
+    !> \author John Wong
+    !> \date   26 December 2019
+    !> \details
+    !>  This function performs the same function as MPAS_stream_mgr_get_next_field
+    !>  with the exception of returning the stream pointer instead of string name.
+    !
+    !-----------------------------------------------------------------------
+    logical function MPAS_stream_mgr_get_next_field_ptr(manager, stream, fieldName, isActive) result(validField) !{{{
+
+        implicit none
+
+        type (MPAS_streamManager_type), intent(inout) :: manager    !< Input: Stream manager containing stream indicated by streamID
+        type (MPAS_stream_list_type), pointer, intent(in) :: stream !< Input: Pointer to the stream to iterate over
+        character (len=StrKIND), intent(out) :: fieldName           !< Output: Name of the next field in streamID
+        logical, intent(out), optional :: isActive                  !< Output: Name of the next field in streamID
+
+        type (mpas_pool_iterator_type) :: poolItr
+        character (len=StrKIND), pointer :: packages
+        integer :: err_level
+        integer :: err_local
+
+
+        validField = .false.
+
+        !
+        ! Check that stream exists
+        !
+        if (.not.associated(stream)) then
+            STREAM_ERROR_WRITE('MPAS_stream_mgr_get_next_field_ptr called with unassociated stream pointer.')
+            return
+        end if
+
+        !
+        ! Get the name of the next field, if one exists
+        !
+        if (mpas_pool_get_next_member(stream % field_pool, poolItr)) then
+            fieldName = poolItr % memberName
+            validField = .true.
+        end if
+
+        !
+        ! Optionally, set the isActive variable
+        !
+        if (validField .and. present(isActive)) then
+            err_level = mpas_pool_get_error_level()
+            call mpas_pool_set_error_level(MPAS_POOL_SILENT)
+
+            nullify(packages)
+            call mpas_pool_get_config(stream % field_pkg_pool, trim(fieldName)//':packages', packages)
+            if (associated(packages)) then
+                isActive = parse_package_list(manager % allPackages, trim(packages))
+            else
+                isActive = .true.
+            end if
+
+            call mpas_pool_set_error_level(err_level)
+        end if
+
+    end function MPAS_stream_mgr_get_next_field_ptr
 
     !-----------------------------------------------------------------------
     !  logical function MPAS_stream_mgr_stream_exists
